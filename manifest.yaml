@@ -1,0 +1,107 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minimal-ingress
+spec:
+  rules:
+  - host:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+      - path: /api/v1
+        pathType: Prefix
+        backend:
+          service:
+            name: flask-service
+            port:
+              number: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    run: web
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-deploy
+spec:
+  selector:
+    matchLabels:
+      run: web
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: web
+    spec:
+      containers:
+      - name: front-end
+        image: legacyworld/nginx-proxy-test_web:latest
+        env:
+        - name: PORT
+          value: "80"
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /usr/share/nginx/html/
+          name: html
+      volumes:
+      - name: html
+        hostPath:
+          path: /run/desktop/mnt/host/c/source/nginx-proxy-test/web/html
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-service
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    run: app
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deploy
+spec:
+  selector:
+    matchLabels:
+      run: app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: app
+    spec:
+      containers:
+      - name: back-end
+        image: legacyworld/nginx-proxy-test_app:latest
+        volumeMounts:
+        - mountPath: /src
+          name: src
+      volumes:
+      - name: src
+        hostPath:
+          path: /run/desktop/mnt/host/c/source/nginx-proxy-test/app/src
