@@ -4,7 +4,6 @@ metadata:
   name: minimal-ingress
 spec:
   rules:
-  - host:
   - http:
       paths:
       - path: /
